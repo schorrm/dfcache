@@ -7,26 +7,29 @@ from typing import Any, Callable, Dict, Optional, TypeVar, cast
 import pandas as pd
 
 from . import cache_record, func_utils
-from .cache_config import CacheConfig, autoload_cache
+from .cache_config import CacheConfig, get_cache
 
 # Doing this instead of defining the types in our cache functions allows VS Code to pick up the proper type annotations
 # https://github.com/microsoft/pyright/issues/774
 _CacheFunc = TypeVar("_CacheFunc", bound=Callable[..., pd.DataFrame])
 
 # Cache is disabled by default
-config = autoload_cache()
+# config = autoload_cache()
 
 
 def enable() -> None:
+    config = get_cache()
     config.enable(True)
 
 
 def disable() -> None:
+    config = get_cache()
     config.enable(False)
 
 
 def purge() -> None:
     ''' Remove all records from the cache '''
+    config = get_cache()
     record_files = glob.glob(os.path.join(config.cache_directory, '*.cache_record.json'))
     records = [cache_record.CacheRecord(filename) for filename in record_files]
     for record in records:
@@ -35,6 +38,7 @@ def purge() -> None:
 
 def flush() -> None:
     ''' Remove all expired files from the cache '''
+    config = get_cache()
     record_files = glob.glob(os.path.join(config.cache_directory, '*.cache_record.json'))
     records = [cache_record.CacheRecord(filename) for filename in record_files]
     for record in records:
@@ -44,9 +48,9 @@ def flush() -> None:
  # pylint: disable=invalid-name
  # pylint: disable=too-few-public-methods
 class df_cache:
-    def __init__(self, expires: int = CacheConfig.DEFAULT_EXPIRATION):
-        self.cache_config = config
-        self.expires = expires
+    def __init__(self, expires: Optional[int] = None):
+        self.cache_config = get_cache()
+        self.expires = expires or self.cache_config.default_expiration
 
     def __call__(self, func: _CacheFunc) -> _CacheFunc:
         @functools.wraps(func)

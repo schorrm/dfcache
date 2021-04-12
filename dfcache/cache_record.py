@@ -6,15 +6,14 @@ import pandas as pd
 
 from . import cache_config, dataframe_utils, file_utils
 
-cfg = cache_config.autoload_cache()
-
 DateOrNumDays = Union[date, int]
 
 
 class CacheRecord:
     def __init__(self, filename: str = None, data: Optional[Dict[str, Any]] = None,
-                 expires: DateOrNumDays = cache_config.CacheConfig.DEFAULT_EXPIRATION):
+                 expires: Optional[DateOrNumDays] = None):
         ''' Create a new cache record. Loads from file if filename is provided, otherwise creates from data, expires '''
+        cfg = cache_config.get_cache()
 
         if filename is None and data is None:
             raise ValueError("CacheRecord must be instantiated with either a file or source data.")
@@ -29,6 +28,7 @@ class CacheRecord:
         assert data is not None
 
         if 'expires' not in data:
+            expires = expires or cfg.default_expiration
             if isinstance(expires, int):
                 expires = date.today() + timedelta(days=expires)
             self.expiration_date = expires
@@ -43,6 +43,7 @@ class CacheRecord:
 
     def save(self) -> None:
         ''' Store the cache record to disk '''
+        cfg = cache_config.get_cache()
         file_utils.safe_jsonify(cfg.cache_directory, self.filename, self.data)
 
     @property
