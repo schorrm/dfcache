@@ -3,7 +3,7 @@ import pathlib
 from typing import Optional
 
 from . import file_utils
-from ..datahelpers import singleton
+from .utils import singleton
 
 
 class CacheConfig(singleton.Singleton):
